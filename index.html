@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avaliação de Perfil Profissional</title>
+    <style>
+        /* Estilo básico para o site ficar bonito */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; line-height: 1.6; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #2c3e50; }
+        .pergunta-bloco { margin-bottom: 20px; padding: 15px; border-bottom: 1px solid #eee; }
+        .opcoes { margin-top: 10px; }
+        label { margin-right: 20px; cursor: pointer; }
+        input[type="email"] { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; background-color: #27ae60; color: white; padding: 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; transition: background 0.3s; }
+        button:hover { background-color: #219150; }
+        #secao-teste { display: none; } /* Escondido até validar e-mail */
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Avaliação Técnica</h1>
+
+    <div id="secao-acesso">
+        <p>Insira seu e-mail para iniciar o teste:</p>
+        <input type="email" id="campoEmail" placeholder="exemplo@email.com">
+        <button onclick="iniciarTeste()">Entrar no Teste</button>
+    </div>
+
+    <div id="secao-teste">
+        <div id="form-perguntas">
+            </div>
+        <button onclick="processarEnvio()">Finalizar e Enviar Resultado</button>
+    </div>
+</div>
+
+<script>
+    // 1. CADASTRE SUAS PERGUNTAS E PESOS AQUI
+    const bancoDePerguntas = [
+        { q: "Você possui manias repetitivas em situações de estresse?", peso: 5 },
+        { q: "Tem dificuldade em organizar tarefas diárias?", peso: 3 },
+        { q: "Sente necessidade de conferir as coisas várias vezes?", peso: 4 },
+        { q: "Prefere rotinas estritas a mudanças inesperadas?", peso: 2 }
+        // Você pode adicionar até as 40 perguntas seguindo este padrão
+    ];
+
+    // COLOQUE AQUI O URL QUE VOCÊ COPIOU DO GOOGLE APPS SCRIPT (PASSO 1)
+    const URL_SCRIPT = "COLE_AQUI_A_URL_DO_SEU_WEB_APP";
+
+    let emailUsuario = "";
+
+    function iniciarTeste() {
+        emailUsuario = document.getElementById('campoEmail').value;
+        
+        if (!emailUsuario.includes("@")) {
+            alert("Por favor, insira um e-mail válido.");
+            return;
+        }
+
+        // Troca de tela
+        document.getElementById('secao-acesso').style.display = 'none';
+        document.getElementById('secao-teste').style.display = 'block';
+
+        const areaPerguntas = document.getElementById('form-perguntas');
+        
+        // Gera o HTML das perguntas automaticamente
+        bancoDePerguntas.forEach((item, index) => {
+            areaPerguntas.innerHTML += `
+                <div class="pergunta-bloco">
+                    <p><strong>${index + 1}. ${item.q}</strong></p>
+                    <div class="opcoes">
+                        <label><input type="radio" name="p${index}" value="${item.peso}"> Sim</label>
+                        <label><input type="radio" name="p${index}" value="0"> Não</label>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function processarEnvio() {
+        let pontuacaoFinal = 0;
+        let todasRespondidas = true;
+
+        // Calcula a soma dos pesos
+        bancoDePerguntas.forEach((item, index) => {
+            const selecionado = document.querySelector(`input[name="p${index}"]:checked`);
+            if (selecionado) {
+                pontuacaoFinal += parseInt(selecionado.value);
+            } else {
+                todasRespondidas = false;
+            }
+        });
+
+        if (!todasRespondidas) {
+            alert("Por favor, responda todas as perguntas antes de enviar.");
+            return;
+        }
+
+        // Envia os dados para o Google Sheets/E-mail
+        const dadosParaEnviar = {
+            email: emailUsuario,
+            resultado: pontuacaoFinal
+        };
+
+        fetch(URL_SCRIPT, {
+            method: 'POST',
+            mode: 'no-cors', // Importante para o Google Script
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dadosParaEnviar)
+        })
+        .then(() => {
+            alert("Sucesso! Seu resultado de " + pontuacaoFinal + " pontos foi enviado.");
+            document.body.innerHTML = "<div class='container'><h1>Obrigado!</h1><p>Suas respostas foram registradas. Este acesso agora está expirado.</p></div>";
+        })
+        .catch(err => alert("Erro ao enviar: " + err));
+    }
+</script>
+
+</body>
+</html>
